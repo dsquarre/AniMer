@@ -1,4 +1,4 @@
-#Integrating ViT with Bioclip Transformer for Animal Pose and Shape Estimation
+# Integrating ViT with Bioclip Transformer for Animal Pose and Shape Estimation
 # AniMer: Animal Pose and Shape Estimation Using Family Aware Transformer
 [**Arxiv**](https://arxiv.org/abs/2412.00837) | [**Project Page**](https://luoxue-star.github.io/AniMer_project_page/) | [**Hugging Face Demo**](https://huggingface.co/spaces/luoxue-star/AniMer)
 
