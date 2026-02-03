@@ -7,6 +7,7 @@ from torchvision.utils import make_grid
 from ..utils.geometry import perspective_projection, aa_to_rotmat
 from ..utils.pylogger import get_pylogger
 from .backbones import create_backbone
+from .backbones.bioclip import BioCLIPBackbone
 from .heads import build_smal_head
 from .heads.classifier_head import ClassTokenHead
 from ..utils import MeshRenderer
@@ -32,6 +33,8 @@ class AMR(pl.LightningModule):
         self.cfg = cfg
         # Create backbone feature extractor
         self.backbone = create_backbone(cfg)
+        self.bioclip = BioCLIPBackbone()
+       # self.bioclip_adapter = Fitting()
         if cfg.MODEL.BACKBONE.get('PRETRAINED_WEIGHTS', None):
             log.info(f'Loading backbone weights from {cfg.MODEL.BACKBONE.PRETRAINED_WEIGHTS}')
             state_dict = torch.load(cfg.MODEL.BACKBONE.PRETRAINED_WEIGHTS, map_location='cpu', weights_only=True)['state_dict']
@@ -48,8 +51,8 @@ class AMR(pl.LightningModule):
             smal_cfg = pickle.load(f, encoding="latin1")
         self.smal = SMAL(**smal_cfg)
 
-        self.class_token_head = ClassTokenHead(**cfg.MODEL.get("CLASS_TOKEN_HEAD", dict()))
-
+        #self.class_token_head = ClassTokenHead(**cfg.MODEL.get("CLASS_TOKEN_HEAD", dict()))
+        self.class_token_head = ClassTokenHead(embed_dim=768)
         # Create discriminator
         self.discriminator = Discriminator()
 
@@ -113,7 +116,16 @@ class AMR(pl.LightningModule):
         batch_size = x.shape[0]
 
         # Compute conditioning features using the backbone
-        conditioning_feats, cls = self.backbone(x[:, :, :, 32:-32])  # [256, 192]
+        conditioning_feats, vit_cls = self.backbone(x[:, :, :, 32:-32])  # [256, 192]
+        #print()
+        #print(conditioning_feats.shape)
+        #print(vit_cls.shape)
+        bioclip_feats,cls = self.bioclip.get_bioclip_vit_features(x[:, :, 16:-16, 16:-16],x.device)
+        #print(bioclip_feats.shape)
+        #print(bioclip_cls.shape)
+        #bioclip_features,cls = self.bioclip_adapter(bioclip_feats,bioclip_cls)
+        #print(bioclip_features.shape)
+        #print(cls.shape)
         pred_smal_params, pred_cam, _ = self.smal_head(conditioning_feats)
 
         # Store useful regression outputs to the output dict
@@ -379,3 +391,4 @@ class AMR(pl.LightningModule):
             Dict: Dictionary containing regression output.
         """
         pass
+
